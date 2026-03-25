@@ -2,11 +2,8 @@ const { Pool } = require('pg');
 const envConfig = require('../config/env');
 
 const pool = new Pool({
-  user: envConfig.DB_USER,
-  host: envConfig.DB_HOST,
-  database: envConfig.DB_NAME,
-  password: envConfig.DB_PASSWORD,
-  port: envConfig.DB_PORT,
+  connectionString: envConfig.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
 });
 
 exports.pool = pool;

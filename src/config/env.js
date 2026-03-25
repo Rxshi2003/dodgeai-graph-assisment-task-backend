@@ -6,20 +6,16 @@ const config = {
   GROK_API_KEY: process.env.GROK_API_KEY,
   API_BASE_URL: process.env.API_BASE_URL,
   MODEL_NAME: process.env.MODEL_NAME,
-  
+
   // App Config
   PORT: process.env.PORT || 3001,
-  
-  // Database Config
-  DB_USER: process.env.DB_USER,
-  DB_PASSWORD: process.env.DB_PASSWORD,
-  DB_HOST: process.env.DB_HOST,
-  DB_PORT: process.env.DB_PORT,
-  DB_NAME: process.env.DB_NAME,
+
+  // Database Config (Render-compatible single connection string)
+  DATABASE_URL: process.env.DATABASE_URL,
 };
 
 // Validate required environment variables
-const requiredConfig = ['GROK_API_KEY', 'API_BASE_URL', 'MODEL_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_PORT', 'DB_NAME'];
+const requiredConfig = ['GROK_API_KEY', 'API_BASE_URL', 'MODEL_NAME', 'DATABASE_URL'];
 const missingConfig = requiredConfig.filter((key) => !config[key]);
 
 if (missingConfig.length > 0) {
