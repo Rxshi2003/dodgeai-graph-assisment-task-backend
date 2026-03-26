@@ -49,31 +49,40 @@ function buildGraphSummary(graphData) {
 
 /**
  * Extract any raw ID numbers mentioned in the user query.
- * e.g. "Order 740583" → { rawId: '740583', prefixedIds: ['O_740583'] }
- *      "invoice 90504248" → { rawId: '90504248', prefixedIds: ['I_90504248'] }
+ * Uses a two-phase approach:
+ *   Phase 1 — extract the numeric/alphanumeric ID from anywhere in the query.
+ *   Phase 2 — detect which entity keyword is mentioned and pick the right prefix.
+ *
+ * e.g. "give me the connection of this order Order 740583"
+ *      → detects 'order' keyword, extracts '740583' → { rawId:'740583', prefixedIds:['O_740583'] }
+ *      "show invoice 90504248" → detects 'invoice', extracts '90504248' → ['I_90504248']
  */
 function extractQueryIds(query) {
-  const patterns = [
-    { regex: /\border\s*#?\s*([A-Z0-9_-]+)/i,    prefixes: ['O_'] },
-    { regex: /\binvoice\s*#?\s*([A-Z0-9_-]+)/i,  prefixes: ['I_'] },
-    { regex: /\bcustomer\s*#?\s*([A-Z0-9_-]+)/i, prefixes: ['C_'] },
-    { regex: /\bproduct\s*#?\s*([A-Z0-9_-]+)/i,  prefixes: ['P_'] },
-    { regex: /\bdelivery\s*#?\s*([A-Z0-9_-]+)/i, prefixes: ['D_'] },
-    { regex: /\bpayment\s*#?\s*([A-Z0-9_-]+)/i,  prefixes: ['PAY_'] },
-    { regex: /\bje\s*#?\s*([A-Z0-9_-]+)/i,       prefixes: ['JE_'] },
-    { regex: /\bjournal\s*entry\s*#?\s*([A-Z0-9_-]+)/i, prefixes: ['JE_'] },
-    // Generic number pattern — try all prefixes
-    { regex: /\b(\d{5,})\b/,                      prefixes: ['O_','I_','C_','P_','D_','PAY_','JE_'] }
+  // Phase 1 — extract the first token that contains 3+ consecutive digits
+  const idMatch = query.match(/\b([A-Z0-9_-]*\d{3,}[A-Z0-9_-]*)\b/i);
+  if (!idMatch) return null;
+  const rawId = idMatch[1];
+
+  // Phase 2 — detect entity type keyword (checked in priority order)
+  const KEYWORDS = [
+    { regex: /\border\b/i,              prefixes: ['O_'] },
+    { regex: /\binvoice\b/i,            prefixes: ['I_'] },
+    { regex: /\bcustomer\b/i,           prefixes: ['C_'] },
+    { regex: /\bproduct\b/i,            prefixes: ['P_'] },
+    { regex: /\bdelivery\b/i,           prefixes: ['D_'] },
+    { regex: /\bpayment\b/i,            prefixes: ['PAY_'] },
+    { regex: /\bjournal\s*entry\b/i,    prefixes: ['JE_'] },
+    { regex: /\bje\b/i,                 prefixes: ['JE_'] },
   ];
 
-  for (const { regex, prefixes } of patterns) {
-    const m = query.match(regex);
-    if (m) {
-      const rawId = m[1];
+  for (const { regex, prefixes } of KEYWORDS) {
+    if (regex.test(query)) {
       return { rawId, prefixedIds: prefixes.map(p => `${p}${rawId}`) };
     }
   }
-  return null;
+
+  // No keyword matched — try all prefixes
+  return { rawId, prefixedIds: ['O_', 'I_', 'C_', 'P_', 'D_', 'PAY_', 'JE_'].map(p => `${p}${rawId}`) };
 }
 
 /**

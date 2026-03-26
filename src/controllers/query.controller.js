@@ -95,26 +95,26 @@ exports.handleQuery = async (req, res) => {
     // Traverse graph with LLM
     let answer = 'Error generating response.';
     let path = '';
+    let focusNodeId = null;
 
     try {
       const llmResponse = await llmService.traverseGraphWithQuery(query, graphData);
       answer = llmResponse.answer;
       path = llmResponse.path;
+      focusNodeId = llmResponse.focusNodeId || null;
 
       if (path && path.length > 0) {
         answer += `\n\n**Path Traced:** ${path}`;
       }
     } catch (llmError) {
-      return res.status(200).json({
-        answer: 'Failed to traverse graph with LLM: ' + llmError.message,
-        query: null,
-        result: null
-      });
+      console.error('[Controller] LLM Error:', llmError.message);
+      answer = 'Failed to traverse graph with LLM: ' + llmError.message;
     }
 
     return res.status(200).json({
       answer,
       query: 'In-Context Graph Traversal',
+      focusNodeId,
       result: graphData
     });
 
